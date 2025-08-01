@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Account;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Transaction extends Model
 {
@@ -15,4 +16,8 @@ class Transaction extends Model
         return $this->belongsTo(Category::class);
     }
     
+    public function account()
+    {
+        return $this->belongsTo(Account::class);
+    }
 }

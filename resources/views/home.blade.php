@@ -72,7 +72,7 @@
                 <div class="col-12 col-md-4 mb-2 mb-md-0">
                     <div class="card card-balance">
                         <div class="card-body text-center">
-                            <h5 class="card-title">Total Saldo</h5>
+                            <h5 class="card-title">Sisa Saldo</h5>
                             <p class="card-text display-6 fw-bold">Rp {{ number_format($totalSaldo ?? 0, 0, ',', '.') }}</p>
                         </div>
                     </div>
@@ -117,23 +117,26 @@
                 <div class="card-body p-2">
                     <div class="d-flex flex-column gap-3">
                         @forelse($transactions ?? [] as $transaction)
-                            <div class="rounded-4 shadow-sm px-3 py-2 d-flex flex-column gap-1" style="background: linear-gradient(135deg, #f8fafc 60%, #e0eafc 100%); border-left: 6px solid {{ $transaction->type == 'pengeluaran' ? '#ff5858' : '#43cea2' }};">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <span class="badge rounded-pill" style="background:{{ $transaction->type == 'pengeluaran' ? '#ff5858' : '#43cea2' }};color:#fff;min-width:80px;">{{ $transaction->date }}</span>
-                                        <span class="fw-bold text-dark">{{ $transaction->category->name ?? '-' }}</span>
+                            <div class="rounded-4 shadow-sm px-3 py-2 d-flex flex-column h-100 gap-1" style="background: linear-gradient(135deg, #f8fafc 60%, #e0eafc 100%); border-left: 6px solid {{ $transaction->type == 'pengeluaran' ? '#ff5858' : '#43cea2' }};">
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge rounded-pill" style="background:{{ $transaction->type == 'pengeluaran' ? '#ff5858' : '#43cea2' }};color:#fff;min-width:80px;">{{ $transaction->date }}</span>
+                                            <span class="fw-bold text-dark">{{ $transaction->category->name ?? '-' }}</span>
+                                        </div>
+                                        <span class="fs-5 fw-bold {{ $transaction->type == 'pengeluaran' ? 'text-danger' : 'text-success' }}">
+                                            {{ $transaction->type == 'pengeluaran' ? '-' : '+' }}Rp {{ number_format($transaction->amount, 0, ',', '.') }}
+                                        </span>
                                     </div>
-                                    <span class="fs-5 fw-bold {{ $transaction->type == 'pengeluaran' ? 'text-danger' : 'text-success' }}">
-                                        {{ $transaction->type == 'pengeluaran' ? '-' : '+' }}Rp {{ number_format($transaction->amount, 0, ',', '.') }}
-                                    </span>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <i class="bi bi-wallet2 text-secondary"></i>
+                                        <span class="fw-semibold text-primary">
+                                            {{ $transaction->account->name ?? 'Belum punya akun' }}
+                                        </span>
+                                    </div>
+                                    <div class="text-muted small ms-4">{{ $transaction->description }}</div>
                                 </div>
-                                <div class="d-flex align-items-center gap-2 mt-1">
-                                    <i class="bi bi-wallet2 text-secondary"></i>
-                                    <span class="fw-semibold text-primary">
-                                        {{ $transaction->account->name ?? 'Belum punya akun' }}
-                                    </span>
-                                </div>
-                                <div class="text-muted small ms-4">{{ $transaction->description }}</div>
+                                <a href="{{ route('transactions.edit', $transaction->id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 align-self-end mt-2"><i class="bi bi-pencil-square me-1"></i>Edit</a>
                             </div>
                         @empty
                             <div class="text-center text-muted py-4">Belum ada transaksi.</div>
