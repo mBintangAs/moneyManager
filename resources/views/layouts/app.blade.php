@@ -9,16 +9,13 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container d-flex justify-content-between align-items-center">
-            <a class="navbar-brand" href="/">MoneyManager</a>
+        <div class="container d-flex justify-content-between align-items-center py-2">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="/"><span class="fw-bold text-primary">VibeMM</span></a>
             @auth
-                <div class="d-flex align-items-center gap-3">
-                    <span class="fw-bold">{{ Auth::user()->name }}</span>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Logout</button>
-                    </form>
-                </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="fw-bold px-3 py-1 rounded-pill bg-gradient bg-primary text-white shadow-sm">{{ Auth::user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}" class="mb-0">@csrf <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm"><i class="bi bi-box-arrow-right"></i> Logout</button></form>
+            </div>
             @endauth
         </div>
     </nav>

@@ -31,7 +31,9 @@ class HomeController extends Controller
 
         $transactions = $query->orderBy('date', 'desc')->limit(10)->get();
 
-        $totalSaldo = Transaction::where('user_id', $user ? $user->id : null)->sum('amount');
+        $totalSaldo = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pemasukan')
+            ->sum('amount');
         if ($filterType === 'daily') {
             $date = request('date', now()->toDateString());
             $totalIncome = Transaction::where('user_id', $user ? $user->id : null)
