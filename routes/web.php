@@ -19,20 +19,20 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\TransactionController;
 
 // Register routes
-Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register')->middleware('guest');
 Route::post('/register', [AuthController::class, 'register']);
 
 // Login routes
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login']);
 
 // Logout route
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Group route yang butuh autentikasi
 Route::middleware(['auth'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Transaksi
     Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');

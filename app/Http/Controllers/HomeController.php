@@ -58,9 +58,9 @@ class HomeController extends Controller
                 ->whereYear('date', substr($month, 0, 4))
                 ->whereMonth('date', substr($month, 5, 2))
                 ->sum('amount');
-        } elseif ($filterType === 'custom') {
+        } elseif ($filterType === 'range') {
             $start = request('start_date');
-            $end = request('end_date');
+            $end = request('end_date') || request('start_date');
             if ($start && $end) {
                 $totalIncome = Transaction::where('user_id', $user ? $user->id : null)
                     ->where('type', 'pemasukan')
