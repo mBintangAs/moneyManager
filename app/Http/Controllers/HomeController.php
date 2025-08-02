@@ -23,8 +23,8 @@ class HomeController extends Controller
                   ->whereMonth('date', substr($month, 5, 2));
         } elseif ($filterType === 'range') {
             $start = request('start_date');
-            $end = request('end_date') || request('start_date');
-
+            $end = request('end_date') ?: $start;
+           
             if ($start && $end) {
                 $query->whereBetween('date', [$start, $end]);
             }
@@ -61,7 +61,8 @@ class HomeController extends Controller
                 ->sum('amount');
         } elseif ($filterType === 'range') {
             $start = request('start_date');
-            $end = request('end_date') || request('start_date');
+            $end = request('end_date') ?: $start;
+
             if ($start && $end) {
                 $totalIncome = Transaction::where('user_id', $user ? $user->id : null)
                     ->where('type', 'pemasukan')
@@ -76,7 +77,6 @@ class HomeController extends Controller
                 $totalExpense = 0;
             }
         }
-
         return view('home', [
             'transactions' => $transactions,
             'totalSaldo' => $totalSaldo,
