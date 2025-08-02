@@ -30,7 +30,7 @@ class HomeController extends Controller
             }
         }
 
-        $transactions = $query->orderBy('date', 'desc')->limit(10)->get();
+        $transactions = $query->orderBy('date', 'desc')->get();
         $totalSaldo = Transaction::where('user_id', $user?->id)
             ->where('type', 'pemasukan')
             ->sum('amount')
