@@ -91,8 +91,18 @@
                             </div>
                             <div class="mb-3">
                                 <label for="description" class="form-label fw-semibold">Nama</label>
-                                <input type="text" autocomplete="on" class="form-control rounded-3 shadow-sm" id="description" name="description"
-                                    value="{{ old('description', $transaction->name) }}" required>
+                                <select id="description" name="description" class="form-select form-select-lg rounded-3 shadow-sm" style="width:100%" required>
+                                    <option value="">Pilih atau tambah nama transaksi</option>
+                                    @foreach ($names as $name)
+                                        <option value="{{ $name }}" @if(old('description', $transaction->name) == $name) selected @endif>{{ $name }}</option>
+                                    @endforeach
+                                    @if($transaction->name && !$names->contains($transaction->name))
+                                        <option value="{{ $transaction->name }}" selected>{{ $transaction->name }}</option>
+                                    @endif
+                                </select>
+                                @error('description')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="mb-3">
                                 <label for="type" class="form-label fw-semibold">Tipe Transaksi</label>
@@ -115,8 +125,8 @@
     </div>
 @endsection
 @section('scripts')
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="/jquery.min.js"></script>
+    <script src="/select2.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#account_id').select2({
@@ -128,6 +138,11 @@
                 tags: true,
                 placeholder: 'Pilih atau tambah kategori',
                 width: '100%'
+            });
+            $('#description').select2({
+                tags: true,
+                placeholder: 'Pilih atau tambah nama transaksi',
+                
             });
         });
     </script>

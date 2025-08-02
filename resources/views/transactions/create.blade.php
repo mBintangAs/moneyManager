@@ -90,8 +90,15 @@
                             </div>
                             <div class="mb-3">
                                 <label for="description" class="form-label fw-semibold">Nama</label>
-                                <input type="text" autocomplete="on" class="form-control rounded-3 shadow-sm" id="description" name="description"
-                                    value="{{ old('description') }}" required>
+                                <select id="description" name="description" class="form-select form-select-lg rounded-3 shadow-sm" style="width:100%" required>
+                                    <option value="">Pilih atau tambah nama transaksi</option>
+                                    @foreach ($names as $name)
+                                        <option value="{{ $name }}" @if(old('description') == $name) selected @endif>{{ $name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('description')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
                             </div>
                             <div class="mb-3">
                                 <label for="type" class="form-label fw-semibold">Tipe Transaksi</label>
@@ -114,7 +121,7 @@
     </div>
 @endsection
 @section('scripts')
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/jquery.min.js"></script>
     <script src="/select2.min.js"></script>
     <script>
         $(document).ready(function() {
@@ -128,6 +135,12 @@
                 placeholder: 'Pilih atau tambah kategori',
                 width: '100%'
             });
+            $('#description').select2({
+                tags: true,
+                placeholder: 'Pilih atau tambah nama transaksi',
+                width: '100%',
+                allowClear: true
+            });
         });
 
         document.querySelector('form').addEventListener('submit', function(e) {
@@ -137,7 +150,7 @@
                     date: document.getElementById('date').value,
                     account_id: document.getElementById('account_id').value,
                     category_id: document.getElementById('category_id').value,
-                    description: document.getElementById('description').value,
+                    description: $('#description').val(),
                     type: document.getElementById('type').value,
                     amount: document.getElementById('amount').value,
                     _token: document.querySelector('input[name="_token"]').value
