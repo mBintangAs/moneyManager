@@ -13,8 +13,9 @@ class TransactionController extends Controller
 {
     public function create()
     {
-        $categories = Category::all();
-        $accounts = Account::all();
+        $user = Auth::user();
+        $categories = Category::where('user_id', $user->id)->get();
+        $accounts = Account::where('user_id', $user->id)->get();
         return view('transactions.create', compact('categories', 'accounts'));
     }
 
@@ -63,8 +64,9 @@ class TransactionController extends Controller
     }
         public function edit(Transaction $transaction)
     {
-        $categories = Category::all();
-        $accounts = Account::all();
+        $user = Auth::user();
+        $categories = Category::where('user_id', $user->id)->get();
+        $accounts = Account::where('user_id', $user->id)->get();
         return view('transactions.edit', compact('transaction', 'categories', 'accounts'));
     }
 

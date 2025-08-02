@@ -85,7 +85,7 @@
                                     Pemasukan Hari Ini
                                 @elseif(request('filter_type') == 'monthly')
                                     Pemasukan Bulan Ini
-                                @elseif(request('filter_type') == 'custom')
+                                @elseif(request('filter_type') == 'range')
                                     Pemasukan (Custom)
                                 @endif
                             </h5>
@@ -101,7 +101,7 @@
                                     Pengeluaran Hari Ini
                                 @elseif(request('filter_type') == 'monthly')
                                     Pengeluaran Bulan Ini
-                                @elseif(request('filter_type') == 'custom')
+                                @elseif(request('filter_type') == 'range')
                                     Pengeluaran (Custom)
                                 @endif
                             </h5>
