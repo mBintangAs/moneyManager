@@ -21,9 +21,10 @@ class HomeController extends Controller
             $month = request('month', now()->format('Y-m'));
             $query->whereYear('date', substr($month, 0, 4))
                   ->whereMonth('date', substr($month, 5, 2));
-        } elseif ($filterType === 'custom') {
+        } elseif ($filterType === 'range') {
             $start = request('start_date');
-            $end = request('end_date');
+            $end = request('end_date') || request('start_date');
+
             if ($start && $end) {
                 $query->whereBetween('date', [$start, $end]);
             }
