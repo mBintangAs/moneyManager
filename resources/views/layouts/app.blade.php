@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', 'MoneyManager') }}</title>
     <link href="/bootstrap.min.css" rel="stylesheet">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#43cea2">
     @yield('styles')
 </head>
 <body>
@@ -27,12 +25,6 @@
     <script src="/jquery.min.js"></script>
     <script src="/bootstrap.bundle.min.js"></script>
     @yield('scripts')
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/service-worker.js');
-        });
-      }
-    </script>
+
 </body>
 </html>

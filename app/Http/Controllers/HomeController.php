@@ -77,11 +77,28 @@ class HomeController extends Controller
                 $totalExpense = 0;
             }
         }
+        // Analisis pengeluaran group by kategori
+        $expenseByCategory = Transaction::with('category')
+            ->where('user_id', $user?->id)
+            ->where('type', 'pengeluaran')
+            ->selectRaw('category_id, SUM(amount) as total')
+            ->groupBy('category_id')
+            ->get();
+
+        // Analisis pengeluaran group by nama transaksi
+        $expenseByName = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pengeluaran')
+            ->selectRaw('name, SUM(amount) as total')
+            ->groupBy('name')
+            ->get();
+
         return view('home', [
             'transactions' => $transactions,
             'totalSaldo' => $totalSaldo,
             'totalIncome' => $totalIncome,
             'totalExpense' => abs($totalExpense),
+            'expenseByCategory' => $expenseByCategory,
+            'expenseByName' => $expenseByName,
         ]);
     }
 }

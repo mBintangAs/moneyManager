@@ -69,6 +69,44 @@
                 <a href="{{ route('transactions.create') }}" class="btn w-100 btn-lg btn-primary shadow">+ Tambah Transaksi</a>
             </div>
             <div class="row g-2">
+                <div class="col-12 col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-0 rounded-4 fw-bold"><i class="bi bi-pie-chart me-2"></i>Pengeluaran per Kategori</div>
+                        <div class="card-body p-2">
+                            <div class="d-flex flex-wrap gap-2">
+                                @forelse($expenseByCategory as $cat)
+                                    <div class="flex-fill min-w-0" style="min-width:140px;max-width:220px;">
+                                        <div class="rounded-3 px-3 py-2 mb-1 shadow-sm d-flex flex-column align-items-start" style="background:linear-gradient(135deg,#f8fafc 60%,#e0eafc 100%);">
+                                            <span class="fw-semibold text-dark small mb-1"><i class="bi bi-tag me-1"></i>{{ $cat->category->name ?? '-' }}</span>
+                                            <span class="fw-bold text-danger">Rp {{ number_format($cat->total, 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">-</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-header bg-white border-0 rounded-4 fw-bold"><i class="bi bi-list-ol me-2"></i>Pengeluaran per Nama Transaksi</div>
+                        <div class="card-body p-2">
+                            <div class="d-flex flex-wrap gap-2">
+                                @forelse($expenseByName as $row)
+                                    <div class="flex-fill min-w-0" style="min-width:140px;max-width:220px;">
+                                        <div class="rounded-3 px-3 py-2 mb-1 shadow-sm d-flex flex-column align-items-start" style="background:linear-gradient(135deg,#f8fafc 60%,#e0eafc 100%);">
+                                            <span class="fw-semibold text-dark small mb-1"><i class="bi bi-receipt me-1"></i>{{ $row->name }}</span>
+                                            <span class="fw-bold text-danger">Rp {{ number_format($row->total, 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="text-muted">-</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="col-12 col-md-4 mb-2 mb-md-0">
                     <div class="card card-balance">
                         <div class="card-body text-center">

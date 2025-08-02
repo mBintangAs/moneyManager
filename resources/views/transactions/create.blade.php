@@ -116,7 +116,6 @@
 @section('scripts')
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/select2.min.js"></script>
-    <script src="/pwa-transactions.js"></script>
     <script>
         $(document).ready(function() {
             $('#account_id').select2({
