@@ -81,7 +81,7 @@ class HomeController extends Controller
         $expenseByCategory = Transaction::with('category')
             ->where('user_id', $user?->id)
             ->where('type', 'pengeluaran')
-            ->whereBetween('date', request('start_date', now()->startOfMonth()), request('end_date', now()->endOfMonth()))
+            ->whereBetween('date', [request('start_date', now()->startOfMonth()), request('end_date', now()->endOfMonth())])
             ->selectRaw('category_id, SUM(amount) as total')
             ->groupBy('category_id')
             ->get();
@@ -89,7 +89,7 @@ class HomeController extends Controller
         // Analisis pengeluaran group by nama transaksi
         $expenseByName = Transaction::where('user_id', $user?->id)
             ->where('type', 'pengeluaran')
-            ->whereBetween('date', request('start_date', now()->startOfMonth()), request('end_date', now()->endOfMonth()))
+            ->whereBetween('date', [request('start_date', now()->startOfMonth()), request('end_date', now()->endOfMonth())])
             ->selectRaw('name, SUM(amount) as total')
             ->groupBy('name')
             ->get();
