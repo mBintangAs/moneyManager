@@ -2,50 +2,29 @@
 @section('styles')
     <link href="/select2.min.css" rel="stylesheet" />
     <style>
-        .select2-selection__rendered {
-            line-height: 50px !important;
-            font-size: 1.1rem !important;
-            color: #2c3e50 !important;
-        }
-        .select2-container .select2-selection--single {
-            height: 50px !important;
-            border-radius: 1rem !important;
-            box-shadow: 0 2px 8px rgba(67,206,162,0.10);
-            background: rgba(255,255,255,0.85) !important;
-            border: 1px solid #cfdef3 !important;
-            font-weight: 500;
-        }
-        .select2-selection__arrow {
-            height: 50px !important;
-        }
-        .select2-container--default .select2-selection--single:focus,
-        .select2-container--default .select2-selection--single:hover {
-            border-color: #43cea2 !important;
-            box-shadow: 0 0 0 2px #43cea233;
-        }
-        .select2-dropdown {
-            border-radius: 1rem !important;
-            box-shadow: 0 4px 16px rgba(67,206,162,0.10);
-            background: #f8fafc !important;
-        }
-        .select2-results__option {
-            padding: 12px 18px !important;
-            font-size: 1rem !important;
-        }
-        .select2-results__option--highlighted {
-            background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%) !important;
-            color: #fff !important;
-        }
+        /* Minimal Select2 */
+        .select2-selection__rendered { line-height: 42px !important; color: #222 !important; }
+        .select2-container .select2-selection--single { height: 42px !important; border-radius: 6px !important; border:1px solid #e6e6e6 !important; background: #fff !important; }
+        .select2-selection__arrow { height: 42px !important; }
+        .select2-dropdown { border-radius:6px !important; box-shadow: 0 4px 10px rgba(0,0,0,0.04); }
+        .select2-results__option { padding:8px 12px !important; }
+        .select2-results__option--highlighted { background:#f1f3f5 !important; color:#111 !important; }
+        /* Forms and cards */
+        body { background:#f7f7f7; }
+        .card { border:1px solid #eee; box-shadow:none; }
+        .card-header { background:transparent; }
+        .btn-primary { background:#111827; border:none; }
+        .form-control, .form-select { border-radius:6px; }
     </style>
 @endsection
 
 @section('content')
-    <div class="container py-5 px-3" style="min-height:100vh; background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);">
+    <div class="container py-5 px-3" style="min-height:100vh;">
         <div class="row justify-content-center">
             <div class="col-12 col-md-7 col-lg-6">
-                <div class="card border-0 shadow-lg rounded-4" style="background:rgba(255,255,255,0.85);">
-                    <div class="card-header border-0 bg-transparent text-center py-4">
-                        <span class="fs-4 fw-bold text-dark"><i class="bi bi-plus-circle me-2"></i>Tambah Transaksi</span>
+                <div class="card rounded-3">
+                    <div class="card-header text-center py-3">
+                        <span class="fs-5 fw-semibold text-dark">Tambah Transaksi</span>
                     </div>
                     <div class="card-body p-4">
                         @if ($errors->any())
@@ -89,13 +68,20 @@
                                 @enderror
                             </div>
                             <div class="mb-3">
-                                <label for="description" class="form-label fw-semibold">Nama</label>
-                                <select id="description" name="description" class="form-select form-select-lg rounded-3 shadow-sm" style="width:100%" required>
+                                <label for="name" class="form-label fw-semibold">Nama</label>
+                                <select id="name" name="name" class="form-select form-select-lg rounded-3 shadow-sm" style="width:100%" required>
                                     <option value="">Pilih atau tambah nama transaksi</option>
                                     @foreach ($names as $name)
-                                        <option value="{{ $name }}" @if(old('description') == $name) selected @endif>{{ $name }}</option>
+                                        <option value="{{ $name }}" @if(old('name') == $name) selected @endif>{{ $name }}</option>
                                     @endforeach
                                 </select>
+                                @error('name')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label fw-semibold">Deskripsi (opsional)</label>
+                                <textarea id="description" name="description" class="form-control rounded-3 shadow-sm" rows="2">{{ old('description') }}</textarea>
                                 @error('description')
                                     <div class="text-danger small">{{ $message }}</div>
                                 @enderror
@@ -112,7 +98,7 @@
                                 <input type="number" class="form-control rounded-3 shadow-sm" id="amount" name="amount"
                                     value="{{ old('amount') }}" required>
                             </div>
-                            <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 shadow" style="font-size:1.2rem; background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%); border:none;">Simpan</button>
+                            <button type="submit" class="btn btn-primary w-100 py-2 rounded">Simpan</button>
                         </form>
                     </div>
                 </div>
@@ -135,7 +121,7 @@
                 placeholder: 'Pilih atau tambah kategori',
                 width: '100%'
             });
-            $('#description').select2({
+            $('#name').select2({
                 tags: true,
                 placeholder: 'Pilih atau tambah nama transaksi',
                 width: '100%',
@@ -150,6 +136,7 @@
                     date: document.getElementById('date').value,
                     account_id: document.getElementById('account_id').value,
                     category_id: document.getElementById('category_id').value,
+                    name: $('#name').val(),
                     description: $('#description').val(),
                     type: document.getElementById('type').value,
                     amount: document.getElementById('amount').value,

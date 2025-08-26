@@ -29,7 +29,8 @@ class TransactionController extends Controller
         // Validasi
         $request->validate([
             'date' => 'required|date',
-            'description' => 'required|string',
+            'name' => 'required|string',
+            'description' => 'nullable|string',
             'amount' => 'required|numeric|min:0',
             'type' => 'required|in:pemasukan,pengeluaran',
             'category_id' => 'required',
@@ -60,12 +61,13 @@ class TransactionController extends Controller
             'account_id' => $request->account_id,
             'date' => $request->date,
             'category_id' => $request->category_id,
-            'name' => $request->description,
+            'name' => $request->name,
+            'description' => $request->description,
             'amount' => $request->amount,
             'type' => $request->type,
         ]);
 
-        return redirect()->route('home')->with('success', 'Transaksi berhasil ditambahkan!');
+        return redirect()->back()->with('success', 'Transaksi berhasil ditambahkan!');
     }
     public function edit(Transaction $transaction)
     {
@@ -84,7 +86,8 @@ class TransactionController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'description' => 'required|string',
+            'name' => 'required|string',
+            'description' => 'nullable|string',
             'amount' => 'required|numeric|min:0',
             'type' => 'required|in:pemasukan,pengeluaran',
             'category_id' => 'required',
@@ -113,7 +116,8 @@ class TransactionController extends Controller
             'account_id' => $request->account_id,
             'date' => $request->date,
             'category_id' => $request->category_id,
-            'name' => $request->description,
+            'name' => $request->name,
+            'description' => $request->description,
             'amount' => $request->amount,
             'type' => $request->type,
         ]);

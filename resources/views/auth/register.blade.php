@@ -3,63 +3,49 @@
 @section('content')
 <div class="container mt-5 px-2">
     <style>
-        body {
-            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-        }
-        .auth-card {
-            background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: #fff;
-            box-shadow: 0 4px 16px rgba(78,84,200,0.15);
-            border-radius: 1.5rem;
-        }
-        .auth-title {
-            font-size: 1.7rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: #fff;
-        }
-        .form-control {
-            border-radius: 0.75rem;
-        }
-        .btn-auth {
-            background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            border: none;
-            border-radius: 0.75rem;
-            font-weight: 600;
-            color: white;
-        }
-        .link-auth {
-            color: #ffffff;
-            font-weight: 500;
-            text-decoration: none
-        }
+        body { background:#fafafa; }
+        .auth-card { background:#fff; border:1px solid #eef2f7; border-radius:8px; padding:1.25rem; }
+        .auth-title { font-size:1.25rem; font-weight:600; color:#111827; }
+        .form-control { border-radius:6px; }
+        .auth-footer a { color:#111827; text-decoration:none; opacity:0.8; }
     </style>
     <div class="row justify-content-center">
-        <div class="col-12 col-md-6">
-            <div class="auth-card p-4">
-                <div class="auth-title mb-3 text-center"><i class="bi bi-person-plus-fill me-2"></i>Register</div>
+        <div class="col-12 col-md-5 col-lg-4">
+            <div class="auth-card">
+                <div class="text-center mb-3">
+                    <div class="auth-title"><i class="bi bi-person-plus-fill me-1"></i>Register</div>
+                </div>
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
                 <form method="POST" action="{{ route('register') }}">
                     @csrf
                     <div class="mb-3">
-                        <label for="name" class="form-label">Name</label>
+                        <label for="name" class="form-label small">Name</label>
                         <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}" required autofocus>
                     </div>
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email address</label>
+                        <label for="email" class="form-label small">Email</label>
                         <input type="email" class="form-control" id="email" name="email" value="{{ old('email') }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
+                        <label for="password" class="form-label small">Password</label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                     <div class="mb-3">
-                        <label for="password_confirmation" class="form-label">Confirm Password</label>
+                        <label for="password_confirmation" class="form-label small">Confirm Password</label>
                         <input type="password" class="form-control" id="password_confirmation" name="password_confirmation" required>
                     </div>
-                    <button type="submit" class="btn btn-auth w-100">Register</button>
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
                 </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ route('login') }}" class="link-auth">Sudah punya akun? Login</a>
+                <div class="mt-3 text-center auth-footer">
+                    <a href="{{ route('login') }}">Sudah punya akun? Login</a>
                 </div>
             </div>
         </div>

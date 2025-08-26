@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Transaction;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -13,6 +15,14 @@ class HomeController extends Controller
         $user = Auth::user();
         $filterType = request()->has('filter_type') ? request('filter_type') : 'daily';
         $query = Transaction::with('category')->where('user_id', $user ? $user->id : null);
+
+        // optional filters from querystring (category, type)
+        if (request()->has('category_id') && request('category_id') != '') {
+            $query->where('category_id', request('category_id'));
+        }
+        if (request()->has('type') && in_array(request('type'), ['pemasukan','pengeluaran'])) {
+            $query->where('type', request('type'));
+        }
 
         if ($filterType === 'daily') {
             $date = request('date', now()->toDateString());
@@ -124,6 +134,36 @@ class HomeController extends Controller
                 ->get();
         }
         // Analisis pengeluaran group by kategori
+        // Compute budget alerts for the selected period (monthly only for now)
+        $budgetAlerts = [];
+        if ($filterType === 'monthly') {
+            $month = request('month', now()->format('Y-m'));
+            $year = substr($month, 0, 4);
+            $mon = substr($month, 5, 2);
+
+            $categoryTotals = Transaction::with('category')
+                ->where('user_id', $user?->id)
+                ->where('type', 'pengeluaran')
+                ->whereYear('date', $year)
+                ->whereMonth('date', $mon)
+                ->selectRaw('category_id, SUM(amount) as total')
+                ->groupBy('category_id')
+                ->get();
+
+            foreach ($categoryTotals as $c) {
+                $budget = $c->category?->budget;
+                if ($budget && $budget > 0) {
+                    $pct = round(($c->total / $budget) * 100, 1);
+                    $budgetAlerts[] = [
+                        'category_id' => $c->category_id,
+                        'category_name' => $c->category?->name ?? 'Lainnya',
+                        'spent' => (float)$c->total,
+                        'budget' => (float)$budget,
+                        'percent' => $pct,
+                    ];
+                }
+            }
+        }
 
         // Analisis pengeluaran group by nama transaksi
 
@@ -134,6 +174,150 @@ class HomeController extends Controller
             'totalExpense' => abs($totalExpense),
             'expenseByCategory' => $expenseByCategory,
             'expenseByName' => $expenseByName,
+            'budgetAlerts' => $budgetAlerts,
+        ]);
+    }
+
+    public function analytics()
+    {
+        $user = Auth::user();
+
+        // This month
+        $thisMonth = now()->startOfMonth();
+        $lastMonth = (clone $thisMonth)->subMonth();
+
+        $incomeThisMonth = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pemasukan')
+            ->whereYear('date', $thisMonth->year)
+            ->whereMonth('date', $thisMonth->month)
+            ->sum('amount');
+
+        $expenseThisMonth = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pengeluaran')
+            ->whereYear('date', $thisMonth->year)
+            ->whereMonth('date', $thisMonth->month)
+            ->sum('amount');
+
+        // Last month for comparison
+        $incomeLastMonth = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pemasukan')
+            ->whereYear('date', $lastMonth->year)
+            ->whereMonth('date', $lastMonth->month)
+            ->sum('amount');
+
+        $expenseLastMonth = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pengeluaran')
+            ->whereYear('date', $lastMonth->year)
+            ->whereMonth('date', $lastMonth->month)
+            ->sum('amount');
+
+        $netBalance = $incomeThisMonth - $expenseThisMonth;
+
+        // Monthly trend for last 12 months
+        $months = [];
+        $incomeSeries = [];
+        $expenseSeries = [];
+    for ($i = 11; $i >= 0; $i--) {
+            $m = now()->subMonths($i);
+            $label = $m->format('Y-m');
+            $months[] = $m->format('M Y');
+
+            $incomeSeries[] = Transaction::where('user_id', $user?->id)
+                ->where('type', 'pemasukan')
+                ->whereYear('date', $m->year)
+                ->whereMonth('date', $m->month)
+                ->sum('amount');
+
+            $expenseSeries[] = Transaction::where('user_id', $user?->id)
+                ->where('type', 'pengeluaran')
+                ->whereYear('date', $m->year)
+                ->whereMonth('date', $m->month)
+                ->sum('amount');
+        }
+
+        // Expense by category this month
+        $expenseByCategory = Transaction::with('category')
+            ->where('user_id', $user?->id)
+            ->where('type', 'pengeluaran')
+            ->whereYear('date', $thisMonth->year)
+            ->whereMonth('date', $thisMonth->month)
+            ->selectRaw('category_id, SUM(amount) as total')
+            ->groupBy('category_id')
+            ->get();
+
+        // Income by category this month
+        $incomeByCategory = Transaction::with('category')
+            ->where('user_id', $user?->id)
+            ->where('type', 'pemasukan')
+            ->whereYear('date', $thisMonth->year)
+            ->whereMonth('date', $thisMonth->month)
+            ->selectRaw('category_id, SUM(amount) as total')
+            ->groupBy('category_id')
+            ->get();
+
+    $totalExpenseForCategories = $expenseByCategory->sum('total');
+        $topCategory = $expenseByCategory->sortByDesc('total')->first();
+        $topCategoryName = $topCategory?->category?->name ?? null;
+        $topCategoryPercent = $totalExpenseForCategories > 0 && $topCategory ? round(($topCategory->total / $totalExpenseForCategories) * 100, 1) : 0;
+
+        // percent change vs last month
+        $expenseChangePercent = $expenseLastMonth > 0 ? round((($expenseThisMonth - $expenseLastMonth) / max(1, $expenseLastMonth)) * 100, 1) : null;
+        $incomeChangePercent = $incomeLastMonth > 0 ? round((($incomeThisMonth - $incomeLastMonth) / max(1, $incomeLastMonth)) * 100, 1) : null;
+
+        // weekend expense share this month (compute by loading month transactions and summing weekend items)
+        $monthStart = $thisMonth->copy();
+        $monthEnd = $thisMonth->copy()->endOfMonth();
+        $monthExpenses = Transaction::where('user_id', $user?->id)
+            ->where('type', 'pengeluaran')
+            ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+            ->get();
+        $weekendExpense = $monthExpenses->filter(function($t){
+            return Carbon::parse($t->date)->isWeekend();
+        })->sum('amount');
+        $weekendExpensePercent = $expenseThisMonth > 0 ? round(($weekendExpense / $expenseThisMonth) * 100, 1) : 0;
+
+        $topCategorySpent = $topCategory?->total ? (float)$topCategory->total : 0;
+        $potentialSavingIf10pct = round($topCategorySpent * 0.10);
+        $netBalanceNegative = $netBalance < 0;
+
+        return view('analytics.index', [
+            'incomeThisMonth' => $incomeThisMonth,
+            'expenseThisMonth' => $expenseThisMonth,
+            'incomeLastMonth' => $incomeLastMonth,
+            'expenseLastMonth' => $expenseLastMonth,
+            'netBalance' => $netBalance,
+            'months' => $months,
+            'incomeSeries' => $incomeSeries,
+            'expenseSeries' => $expenseSeries,
+            'expenseByCategory' => $expenseByCategory,
+            'incomeByCategory' => $incomeByCategory,
+            // compute simple budget alerts for this month as well
+            'budgetAlerts' => (function() use ($expenseByCategory) {
+                $alerts = [];
+                foreach ($expenseByCategory as $c) {
+                    $budget = $c->category?->budget;
+                    if ($budget && $budget > 0) {
+                        $pct = round(($c->total / $budget) * 100, 1);
+                        $alerts[] = [
+                            'category_id' => $c->category_id,
+                            'category_name' => $c->category?->name ?? 'Lainnya',
+                            'spent' => (float)$c->total,
+                            'budget' => (float)$budget,
+                            'percent' => $pct,
+                        ];
+                    }
+                }
+                return $alerts;
+            })(),
+            'currentMonthParam' => $thisMonth->format('Y-m'),
+            'topCategoryName' => $topCategoryName,
+            'topCategoryPercent' => $topCategoryPercent,
+            'expenseChangePercent' => $expenseChangePercent,
+            'incomeChangePercent' => $incomeChangePercent,
+            'weekendExpensePercent' => $weekendExpensePercent,
+            'topCategorySpent' => $topCategorySpent,
+            'potentialSavingIf10pct' => $potentialSavingIf10pct,
+            'netBalanceNegative' => $netBalanceNegative,
         ]);
     }
 }

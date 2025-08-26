@@ -32,6 +32,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware(['auth'])->group(function () {
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/home', [HomeController::class, 'index'])->name('home');
+    // Analytics
+    Route::get('/analytics', [HomeController::class, 'analytics'])->name('analytics');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Transaksi
