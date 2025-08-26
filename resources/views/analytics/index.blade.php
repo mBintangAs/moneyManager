@@ -41,6 +41,7 @@
                     <div class="muted-small">Insight(Bulan ini)</div>
                     @if($topCategoryName)
                         <p class="mb-0 summary-value">Kategori terbesar pengeluaran bulan ini adalah <strong>{{ $topCategoryName }}</strong> sebesar <strong>{{ $topCategoryPercent }}%</strong> dari total pengeluaran.</p>
+                        <p class="mb-0 small text-muted mt-1">Rata-rata pengeluaran harian sejak awal bulan: <strong>Rp {{ number_format($avgDailySinceMonth ?? 0,0,',','.') }}</strong></p>
                     @else
                         <p class="mb-0 text-muted">Belum ada data pengeluaran untuk bulan ini.</p>
                     @endif
@@ -126,132 +127,60 @@
      
         <div class="row g-3 mt-3">
             <div class="col-12 col-md-6">
-                <div class="card p-3 chart-card">
+                <div class="card p-3">
                     <div class="card-body">
-                        <h6>Distribusi Pengeluaran (Bulan ini)</h6>
-                        <canvas id="donutChart"></canvas>
+                        <h6>Peringkat Pengeluaran (Bulan ini)</h6>
+                        <div class="list-group mt-2">
+                            @php $rank = 0; @endphp
+                            @forelse($expenseByCategory->sortByDesc('total') as $cat)
+                                @php $rank++; @endphp
+                                <a href="/home?filter_type=monthly&month={{ $currentMonthParam }}&category_id={{ $cat->category_id }}&type=pengeluaran" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong class="me-2">#{{ $rank }}</strong>
+                                        <span>{{ $cat->category?->name ?? 'Lainnya' }}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-semibold">Rp {{ number_format($cat->total,0,',','.') }}</div>
+                                        @if($expenseThisMonth > 0)
+                                            <div class="small text-muted">{{ round(($cat->total / $expenseThisMonth) * 100,1) }}%</div>
+                                        @endif
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="text-muted">Belum ada pengeluaran untuk bulan ini.</div>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
             <div class="col-12 col-md-6">
-                <div class="card p-3 chart-card">
+                <div class="card p-3">
                     <div class="card-body">
-                        <h6>Distribusi Pemasukan (Bulan ini)</h6>
-                        <canvas id="incomeDonutChart"></canvas>
+                        <h6>Peringkat Pemasukan (Bulan ini)</h6>
+                        <div class="list-group mt-2">
+                            @php $rankInc = 0; @endphp
+                            @forelse($incomeByCategory->sortByDesc('total') as $cat)
+                                @php $rankInc++; @endphp
+                                <a href="/home?filter_type=monthly&month={{ $currentMonthParam }}&category_id={{ $cat->category_id }}&type=pemasukan" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong class="me-2">#{{ $rankInc }}</strong>
+                                        <span>{{ $cat->category?->name ?? 'Lainnya' }}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-semibold">Rp {{ number_format($cat->total,0,',','.') }}</div>
+                                        @if($incomeThisMonth > 0)
+                                            <div class="small text-muted">{{ round(($cat->total / $incomeThisMonth) * 100,1) }}%</div>
+                                        @endif
+                                    </div>
+                                </a>
+                            @empty
+                                <div class="text-muted">Belum ada pemasukan untuk bulan ini.</div>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
       
     </div>
-@endsection
-
-@section('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script>
-        const months = @json($months);
-        const incomeData = @json($incomeSeries);
-        const expenseData = @json($expenseSeries);
-
-        // const ctx = document.getElementById('trendChart').getContext('2d');
-        // new Chart(ctx, {
-        //     type: 'line',
-        //     data: {
-        //         labels: months,
-        //         datasets: [
-        //             {
-        //                 label: 'Pemasukan',
-        //                 data: incomeData,
-        //                 borderColor: '#111827',
-        //                 backgroundColor: 'rgba(17,24,39,0.05)',
-        //                 tension: 0.2,
-        //             },
-        //             {
-        //                 label: 'Pengeluaran',
-        //                 data: expenseData,
-        //                 borderColor: '#ef4444',
-        //                 backgroundColor: 'rgba(239,68,68,0.05)',
-        //                 tension: 0.2,
-        //             }
-        //         ]
-        //     },
-        //     options: {
-        //         responsive: true,
-        //         maintainAspectRatio: false,
-        //         animation: { duration: 0 },
-        //         responsiveAnimationDuration: 0,
-        //         scales: {
-        //             y: { beginAtZero: true }
-        //         }
-        //     }
-        // });
-
-        // Donut chart for expense by category
-        const donutCtx = document.getElementById('donutChart').getContext('2d');
-        const expenseByCategory = @json($expenseByCategory->map(function($r){ return ['id' => $r->category_id, 'label' => $r->category?->name ?? 'Lainnya', 'value' => (float)$r->total]; }));
-        const donutLabels = expenseByCategory.map(i => i.label);
-        const donutData = expenseByCategory.map(i => i.value);
-        const donutIds = expenseByCategory.map(i => i.id);
-
-        const expenseDonut = new Chart(donutCtx, {
-            type: 'doughnut',
-            data: {
-                labels: donutLabels,
-                datasets: [{ data: donutData, backgroundColor: ['#111827','#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6'] }]
-            },
-            options: {
-                // disable Chart.js animation and responsive resize to avoid continuous rAF work
-                responsive: false,
-                maintainAspectRatio: false,
-                animations: false,
-                // small resize delay if responsive is enabled elsewhere
-                resizeDelay: 200
-            }
-        });
-
-        // Income donut
-        const incomeCtx = document.getElementById('incomeDonutChart').getContext('2d');
-        const incomeByCategory = @json($incomeByCategory->map(function($r){ return ['id' => $r->category_id, 'label' => $r->category?->name ?? 'Lainnya', 'value' => (float)$r->total]; }));
-        const incomeLabels = incomeByCategory.map(i => i.label);
-        const incomeDataDonut = incomeByCategory.map(i => i.value);
-        const incomeIds = incomeByCategory.map(i => i.id);
-
-        const incomeDonut = new Chart(incomeCtx, {
-            type: 'doughnut',
-            data: {
-                labels: incomeLabels,
-                datasets: [{ data: incomeDataDonut, backgroundColor: ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#ef4444','#111827'] }]
-            },
-            options: {
-                responsive: false,
-                maintainAspectRatio: false,
-                animations: false,
-                resizeDelay: 200
-            }
-        });
-
-        // Click handlers for drill-down. Redirect to home with query params: monthly, month=currentMonthParam, category_id, type
-        const currentMonth = @json($currentMonthParam);
-        document.getElementById('donutChart').onclick = function(evt) {
-            const active = expenseDonut.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
-            if (active.length) {
-                const idx = active[0].index;
-                const catId = donutIds[idx];
-                if (catId) {
-                    window.location = `/home?filter_type=monthly&month=${currentMonth}&category_id=${catId}&type=pengeluaran`;
-                }
-            }
-        };
-
-        document.getElementById('incomeDonutChart').onclick = function(evt) {
-            const active = incomeDonut.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
-            if (active.length) {
-                const idx = active[0].index;
-                const catId = incomeIds[idx];
-                if (catId) {
-                    window.location = `/home?filter_type=monthly&month=${currentMonth}&category_id=${catId}&type=pemasukan`;
-                }
-            }
-        };
-    </script>
 @endsection

@@ -166,6 +166,24 @@ class HomeController extends Controller
         }
 
         // Analisis pengeluaran group by nama transaksi
+        // Average daily expense for the selected period
+        $avgDailyExpense = 0;
+        if ($filterType === 'daily') {
+            $avgDailyExpense = $totalExpense;
+        } elseif ($filterType === 'monthly') {
+            $month = request('month', now()->format('Y-m'));
+            $year = substr($month, 0, 4);
+            $mon = substr($month, 5, 2);
+            $daysInMonth = Carbon::createFromDate($year, $mon, 1)->daysInMonth;
+            $avgDailyExpense = $daysInMonth > 0 ? ($totalExpense / $daysInMonth) : 0;
+        } elseif ($filterType === 'range') {
+            $start = request('start_date');
+            $end = request('end_date') ?: $start;
+            if ($start && $end) {
+                $days = Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1;
+                $avgDailyExpense = $days > 0 ? ($totalExpense / $days) : 0;
+            }
+        }
 
         return view('home', [
             'transactions' => $transactions,
@@ -175,6 +193,7 @@ class HomeController extends Controller
             'expenseByCategory' => $expenseByCategory,
             'expenseByName' => $expenseByName,
             'budgetAlerts' => $budgetAlerts,
+            'avgDailyExpense' => $avgDailyExpense,
         ]);
     }
 
@@ -280,6 +299,10 @@ class HomeController extends Controller
         $potentialSavingIf10pct = round($topCategorySpent * 0.10);
         $netBalanceNegative = $netBalance < 0;
 
+    // average daily expense since start of this month (up to today)
+    $daysElapsed = now()->day;
+    $avgDailySinceMonth = $daysElapsed > 0 ? ($expenseThisMonth / $daysElapsed) : 0;
+
         return view('analytics.index', [
             'incomeThisMonth' => $incomeThisMonth,
             'expenseThisMonth' => $expenseThisMonth,
@@ -318,6 +341,7 @@ class HomeController extends Controller
             'topCategorySpent' => $topCategorySpent,
             'potentialSavingIf10pct' => $potentialSavingIf10pct,
             'netBalanceNegative' => $netBalanceNegative,
+            'avgDailySinceMonth' => $avgDailySinceMonth,
         ]);
     }
 }
