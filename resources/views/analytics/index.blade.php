@@ -13,37 +13,53 @@
 
 @section('content')
     <div class="container mt-4 px-2">
-       
+        <!-- Filter Section -->
+        <div class="mb-3">
+            <form method="GET" class="row gap-2 align-items-end flex-grow-1 p-3" style="border:1px solid #eef2f7;border-radius:8px;" aria-label="Filter analisis">
+                <input type="hidden" name="filter_type" value="range">
+                <div class="col-12 col-md-4 d-flex flex-column">
+                    <label for="start_date" class="form-label small mb-1">Dari Tanggal</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}" aria-label="Tanggal mulai">
+                </div>
+                <div class="col-12 col-md-4 d-flex flex-column">
+                    <label for="end_date" class="form-label small mb-1">Sampai Tanggal</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}" aria-label="Tanggal selesai">
+                </div>
+                <div class="col-12 col-md-2 d-flex align-items-end">
+                    <button type="submit" class="w-100 btn btn-outline-secondary btn-sm" aria-label="Terapkan filter">Analisis</button>
+                </div>
+            </form>
+        </div>
 
         <div class="row g-3 mb-3">
             <div class="col-12 col-md-4">
                 <div class="summary-card">
-                    <div class="muted-small">Total Pemasukan (Bulan ini)</div>
+                    <div class="muted-small">Total Pemasukan (Periode)</div>
                     <div class="summary-value">Rp {{ number_format($incomeThisMonth,0,',','.') }}</div>
-                    <div class="muted-small">Bulan lalu: Rp {{ number_format($incomeLastMonth,0,',','.') }}</div>
+                    <div class="muted-small">Periode sebelumnya: Rp {{ number_format($incomeLastMonth,0,',','.') }}</div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
                 <div class="summary-card">
-                    <div class="muted-small">Total Pengeluaran (Bulan ini)</div>
+                    <div class="muted-small">Total Pengeluaran (Periode)</div>
                     <div class="summary-value">Rp {{ number_format($expenseThisMonth,0,',','.') }}</div>
-                    <div class="muted-small">Bulan lalu: Rp {{ number_format($expenseLastMonth,0,',','.') }}</div>
+                    <div class="muted-small">Periode sebelumnya: Rp {{ number_format($expenseLastMonth,0,',','.') }}</div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
                 <div class="summary-card">
-                    <div class="muted-small">Saldo Bersih (Bulan ini)</div>
+                    <div class="muted-small">Saldo Bersih (Periode)</div>
                     <div class="summary-value">Rp {{ number_format($netBalance,0,',','.') }}</div>
                 </div>
             </div>
             <div class="col-12 col-md-4">
                 <div class="summary-card">
-                    <div class="muted-small">Insight(Bulan ini)</div>
+                    <div class="muted-small">Insight (Periode)</div>
                     @if($topCategoryName)
-                        <p class="mb-0 summary-value">Kategori terbesar pengeluaran bulan ini adalah <strong>{{ $topCategoryName }}</strong> sebesar <strong>{{ $topCategoryPercent }}%</strong> dari total pengeluaran.</p>
-                        <p class="mb-0 small text-muted mt-1">Rata-rata pengeluaran harian sejak awal bulan: <strong>Rp {{ number_format($avgDailySinceMonth ?? 0,0,',','.') }}</strong></p>
+                        <p class="mb-0 summary-value">Kategori terbesar pengeluaran adalah <strong>{{ $topCategoryName }}</strong> sebesar <strong>{{ $topCategoryPercent }}%</strong> dari total pengeluaran.</p>
+                        <p class="mb-0 small text-muted mt-1">Rata-rata pengeluaran harian: <strong>Rp {{ number_format($avgDailySinceMonth ?? 0,0,',','.') }}</strong></p>
                     @else
-                        <p class="mb-0 text-muted">Belum ada data pengeluaran untuk bulan ini.</p>
+                        <p class="mb-0 text-muted">Belum ada data pengeluaran untuk periode ini.</p>
                     @endif
                 </div>
             </div>

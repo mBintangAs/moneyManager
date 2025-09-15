@@ -200,43 +200,77 @@ class HomeController extends Controller
     public function analytics()
     {
         $user = Auth::user();
+        $filterType = request()->has('filter_type') ? request('filter_type') : 'monthly';
 
-        // This month
-        $thisMonth = now()->startOfMonth();
-        $lastMonth = (clone $thisMonth)->subMonth();
+        // Determine period based on filter
+        if ($filterType === 'daily') {
+            $date = request('date', now()->toDateString());
+            $currentPeriod = Carbon::parse($date);
+            $previousPeriod = $currentPeriod->copy()->subDay();
+        } elseif ($filterType === 'monthly') {
+            $month = request('month', now()->format('Y-m'));
+            $currentPeriod = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+            $previousPeriod = $currentPeriod->copy()->subMonth();
+        } else { // range
+            $start = request('start_date');
+            $end = request('end_date') ?: $start;
+            if ($start && $end) {
+                $currentPeriod = ['start' => $start, 'end' => $end];
+                $days = Carbon::parse($start)->diffInDays(Carbon::parse($end)) + 1;
+                $previousStart = Carbon::parse($start)->subDays($days)->toDateString();
+                $previousEnd = Carbon::parse($start)->subDay()->toDateString();
+                $previousPeriod = ['start' => $previousStart, 'end' => $previousEnd];
+            } else {
+                $currentPeriod = Carbon::now()->startOfMonth();
+                $previousPeriod = $currentPeriod->copy()->subMonth();
+            }
+        }
 
-        $incomeThisMonth = Transaction::where('user_id', $user?->id)
-            ->where('type', 'pemasukan')
-            ->whereYear('date', $thisMonth->year)
-            ->whereMonth('date', $thisMonth->month)
-            ->sum('amount');
+        // Current period income/expense
+        $incomeQuery = Transaction::where('user_id', $user?->id)->where('type', 'pemasukan');
+        $expenseQuery = Transaction::where('user_id', $user?->id)->where('type', 'pengeluaran');
 
-        $expenseThisMonth = Transaction::where('user_id', $user?->id)
-            ->where('type', 'pengeluaran')
-            ->whereYear('date', $thisMonth->year)
-            ->whereMonth('date', $thisMonth->month)
-            ->sum('amount');
+        if ($filterType === 'daily') {
+            $incomeThisMonth = $incomeQuery->whereDate('date', $currentPeriod->toDateString())->sum('amount');
+            $expenseThisMonth = $expenseQuery->whereDate('date', $currentPeriod->toDateString())->sum('amount');
+        } elseif ($filterType === 'monthly') {
+            $incomeThisMonth = $incomeQuery->whereYear('date', $currentPeriod->year)
+                ->whereMonth('date', $currentPeriod->month)->sum('amount');
+            $expenseThisMonth = $expenseQuery->whereYear('date', $currentPeriod->year)
+                ->whereMonth('date', $currentPeriod->month)->sum('amount');
+        } else {
+            $incomeThisMonth = is_array($currentPeriod) ? 
+                $incomeQuery->whereBetween('date', [$currentPeriod['start'], $currentPeriod['end']])->sum('amount') : 0;
+            $expenseThisMonth = is_array($currentPeriod) ? 
+                $expenseQuery->whereBetween('date', [$currentPeriod['start'], $currentPeriod['end']])->sum('amount') : 0;
+        }
 
-        // Last month for comparison
-        $incomeLastMonth = Transaction::where('user_id', $user?->id)
-            ->where('type', 'pemasukan')
-            ->whereYear('date', $lastMonth->year)
-            ->whereMonth('date', $lastMonth->month)
-            ->sum('amount');
+        // Previous period for comparison
+        $incomeLastQuery = Transaction::where('user_id', $user?->id)->where('type', 'pemasukan');
+        $expenseLastQuery = Transaction::where('user_id', $user?->id)->where('type', 'pengeluaran');
 
-        $expenseLastMonth = Transaction::where('user_id', $user?->id)
-            ->where('type', 'pengeluaran')
-            ->whereYear('date', $lastMonth->year)
-            ->whereMonth('date', $lastMonth->month)
-            ->sum('amount');
+        if ($filterType === 'daily') {
+            $incomeLastMonth = $incomeLastQuery->whereDate('date', $previousPeriod->toDateString())->sum('amount');
+            $expenseLastMonth = $expenseLastQuery->whereDate('date', $previousPeriod->toDateString())->sum('amount');
+        } elseif ($filterType === 'monthly') {
+            $incomeLastMonth = $incomeLastQuery->whereYear('date', $previousPeriod->year)
+                ->whereMonth('date', $previousPeriod->month)->sum('amount');
+            $expenseLastMonth = $expenseLastQuery->whereYear('date', $previousPeriod->year)
+                ->whereMonth('date', $previousPeriod->month)->sum('amount');
+        } else {
+            $incomeLastMonth = is_array($previousPeriod) ? 
+                $incomeLastQuery->whereBetween('date', [$previousPeriod['start'], $previousPeriod['end']])->sum('amount') : 0;
+            $expenseLastMonth = is_array($previousPeriod) ? 
+                $expenseLastQuery->whereBetween('date', [$previousPeriod['start'], $previousPeriod['end']])->sum('amount') : 0;
+        }
 
         $netBalance = $incomeThisMonth - $expenseThisMonth;
 
-        // Monthly trend for last 12 months
+        // Monthly trend for last 12 months (keep this unchanged for consistency)
         $months = [];
         $incomeSeries = [];
         $expenseSeries = [];
-    for ($i = 11; $i >= 0; $i--) {
+        for ($i = 11; $i >= 0; $i--) {
             $m = now()->subMonths($i);
             $label = $m->format('Y-m');
             $months[] = $m->format('M Y');
@@ -254,25 +288,44 @@ class HomeController extends Controller
                 ->sum('amount');
         }
 
-        // Expense by category this month
-        $expenseByCategory = Transaction::with('category')
+        // Expense/Income by category for current period
+        $expenseCategoryQuery = Transaction::with('category')
             ->where('user_id', $user?->id)
-            ->where('type', 'pengeluaran')
-            ->whereYear('date', $thisMonth->year)
-            ->whereMonth('date', $thisMonth->month)
-            ->selectRaw('category_id, SUM(amount) as total')
-            ->groupBy('category_id')
-            ->get();
+            ->where('type', 'pengeluaran');
+        
+        $incomeCategoryQuery = Transaction::with('category')
+            ->where('user_id', $user?->id)
+            ->where('type', 'pemasukan');
 
-        // Income by category this month
-        $incomeByCategory = Transaction::with('category')
-            ->where('user_id', $user?->id)
-            ->where('type', 'pemasukan')
-            ->whereYear('date', $thisMonth->year)
-            ->whereMonth('date', $thisMonth->month)
-            ->selectRaw('category_id, SUM(amount) as total')
-            ->groupBy('category_id')
-            ->get();
+        if ($filterType === 'daily') {
+            $expenseByCategory = $expenseCategoryQuery->whereDate('date', $currentPeriod->toDateString())
+                ->selectRaw('category_id, SUM(amount) as total')
+                ->groupBy('category_id')->get();
+            $incomeByCategory = $incomeCategoryQuery->whereDate('date', $currentPeriod->toDateString())
+                ->selectRaw('category_id, SUM(amount) as total')
+                ->groupBy('category_id')->get();
+        } elseif ($filterType === 'monthly') {
+            $expenseByCategory = $expenseCategoryQuery->whereYear('date', $currentPeriod->year)
+                ->whereMonth('date', $currentPeriod->month)
+                ->selectRaw('category_id, SUM(amount) as total')
+                ->groupBy('category_id')->get();
+            $incomeByCategory = $incomeCategoryQuery->whereYear('date', $currentPeriod->year)
+                ->whereMonth('date', $currentPeriod->month)
+                ->selectRaw('category_id, SUM(amount) as total')
+                ->groupBy('category_id')->get();
+        } else {
+            if (is_array($currentPeriod)) {
+                $expenseByCategory = $expenseCategoryQuery->whereBetween('date', [$currentPeriod['start'], $currentPeriod['end']])
+                    ->selectRaw('category_id, SUM(amount) as total')
+                    ->groupBy('category_id')->get();
+                $incomeByCategory = $incomeCategoryQuery->whereBetween('date', [$currentPeriod['start'], $currentPeriod['end']])
+                    ->selectRaw('category_id, SUM(amount) as total')
+                    ->groupBy('category_id')->get();
+            } else {
+                $expenseByCategory = collect();
+                $incomeByCategory = collect();
+            }
+        }
 
     $totalExpenseForCategories = $expenseByCategory->sum('total');
         $topCategory = $expenseByCategory->sortByDesc('total')->first();
@@ -283,25 +336,43 @@ class HomeController extends Controller
         $expenseChangePercent = $expenseLastMonth > 0 ? round((($expenseThisMonth - $expenseLastMonth) / max(1, $expenseLastMonth)) * 100, 1) : null;
         $incomeChangePercent = $incomeLastMonth > 0 ? round((($incomeThisMonth - $incomeLastMonth) / max(1, $incomeLastMonth)) * 100, 1) : null;
 
-        // weekend expense share this month (compute by loading month transactions and summing weekend items)
-        $monthStart = $thisMonth->copy();
-        $monthEnd = $thisMonth->copy()->endOfMonth();
-        $monthExpenses = Transaction::where('user_id', $user?->id)
-            ->where('type', 'pengeluaran')
-            ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
-            ->get();
-        $weekendExpense = $monthExpenses->filter(function($t){
-            return Carbon::parse($t->date)->isWeekend();
-        })->sum('amount');
-        $weekendExpensePercent = $expenseThisMonth > 0 ? round(($weekendExpense / $expenseThisMonth) * 100, 1) : 0;
+        // weekend expense share for current period
+        if ($filterType === 'monthly' && !is_array($currentPeriod)) {
+            $monthStart = $currentPeriod->copy();
+            $monthEnd = $currentPeriod->copy()->endOfMonth();
+            $monthExpenses = Transaction::where('user_id', $user?->id)
+                ->where('type', 'pengeluaran')
+                ->whereBetween('date', [$monthStart->toDateString(), $monthEnd->toDateString()])
+                ->get();
+            $weekendExpense = $monthExpenses->filter(function($t){
+                return Carbon::parse($t->date)->isWeekend();
+            })->sum('amount');
+            $weekendExpensePercent = $expenseThisMonth > 0 ? round(($weekendExpense / $expenseThisMonth) * 100, 1) : 0;
+        } else {
+            $weekendExpensePercent = 0;
+        }
 
         $topCategorySpent = $topCategory?->total ? (float)$topCategory->total : 0;
         $potentialSavingIf10pct = round($topCategorySpent * 0.10);
         $netBalanceNegative = $netBalance < 0;
 
-    // average daily expense since start of this month (up to today)
-    $daysElapsed = now()->day;
-    $avgDailySinceMonth = $daysElapsed > 0 ? ($expenseThisMonth / $daysElapsed) : 0;
+        // average daily expense since start of this month (up to today)
+        if ($filterType === 'monthly' && !is_array($currentPeriod)) {
+            $daysElapsed = now()->day;
+            $avgDailySinceMonth = $daysElapsed > 0 ? ($expenseThisMonth / $daysElapsed) : 0;
+        } elseif ($filterType === 'daily') {
+            $avgDailySinceMonth = $expenseThisMonth;
+        } else {
+            $days = is_array($currentPeriod) ? Carbon::parse($currentPeriod['start'])->diffInDays(Carbon::parse($currentPeriod['end'])) + 1 : 1;
+            $avgDailySinceMonth = $days > 0 ? ($expenseThisMonth / $days) : 0;
+        }
+
+        // Current month param for drill-down links
+        if ($filterType === 'monthly' && !is_array($currentPeriod)) {
+            $currentMonthParam = $currentPeriod->format('Y-m');
+        } else {
+            $currentMonthParam = now()->format('Y-m');
+        }
 
         return view('analytics.index', [
             'incomeThisMonth' => $incomeThisMonth,
@@ -332,7 +403,7 @@ class HomeController extends Controller
                 }
                 return $alerts;
             })(),
-            'currentMonthParam' => $thisMonth->format('Y-m'),
+            'currentMonthParam' => $currentMonthParam,
             'topCategoryName' => $topCategoryName,
             'topCategoryPercent' => $topCategoryPercent,
             'expenseChangePercent' => $expenseChangePercent,
