@@ -33,6 +33,11 @@
                 @endif
                 <div class="d-flex flex-column flex-md-row gap-3 align-items-start">
                     <form method="GET" class="row gap-2 align-items-end flex-grow-1 p-3" style="border:1px solid #eef2f7;border-radius:8px;" aria-label="Filter transaksi">
+                        <!-- Hidden input to preserve name filter -->
+                        @if(request('name'))
+                            <input type="hidden" name="name" value="{{ request('name') }}">
+                        @endif
+                        
                         <div class="w-100 d-flex flex-column">
                             <label for="filter_type" class="form-label small mb-1">Tampilkan</label>
                             <select name="filter_type" id="filter_type" class="form-select form-select-sm" onchange="toggleDateInputs()" aria-label="Tipe filter">
@@ -60,6 +65,16 @@
                         <a href="{{ route('transactions.create') }}" class="btn btn-primary btn-lg w-100 d-md-inline-block" aria-label="Tambah Transaksi">+ Tambah Transaksi</a>
                     </div>
                 </div>
+                
+                <!-- Show current name filter -->
+                @if(request('name'))
+                    <div class="mb-2">
+                        <div class="alert alert-info p-2 d-flex justify-content-between align-items-center" style="background:#e0f2fe;border:1px solid #b3e5fc;color:#01579b;">
+                            <span><strong>Filter aktif:</strong> Menampilkan transaksi dengan nama "{{ request('name') }}"</span>
+                            <a href="{{ route('home', request()->except('name')) }}" class="btn btn-sm btn-outline-primary">Hapus Filter</a>
+                        </div>
+                    </div>
+                @endif
             </div>
             <script>
             function toggleDateInputs() {
@@ -94,10 +109,14 @@
                             <div class="d-flex flex-wrap gap-2">
                                 @forelse($expenseByName as $row)
                                     <div class="flex-fill min-w-0" style="min-width:0;">
-                                        <div class="rounded-3 px-3 py-2 mb-1 d-flex flex-column align-items-start" style="background:#fff; border:1px solid #f1f3f5;">
-                                            <span class="fw-semibold text-dark small mb-1"><i class="bi bi-receipt me-1"></i>{{ $row->name }}</span>
-                                            <span class="fw-bold text-danger">Rp {{ number_format($row->total, 0, ',', '.') }}</span>
-                                        </div>
+                                        <a href="{{ route('home', array_merge(request()->all(), ['name' => $row->name])) }}" class="text-decoration-none">
+                                            <div class="rounded-3 px-3 py-2 mb-1 d-flex flex-column align-items-start" style="background:#fff; border:1px solid #f1f3f5; cursor:pointer; transition: all 0.2s;" 
+                                                 onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.borderColor='#dee2e6';" 
+                                                 onmouseout="this.style.backgroundColor='#fff'; this.style.borderColor='#f1f3f5';">
+                                                <span class="fw-semibold text-dark small mb-1"><i class="bi bi-receipt me-1"></i>{{ $row->name }}</span>
+                                                <span class="fw-bold text-danger">Rp {{ number_format($row->total, 0, ',', '.') }}</span>
+                                            </div>
+                                        </a>
                                     </div>
                                 @empty
                                     <div class="text-muted">-</div>

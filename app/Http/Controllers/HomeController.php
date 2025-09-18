@@ -16,12 +16,15 @@ class HomeController extends Controller
         $filterType = request()->has('filter_type') ? request('filter_type') : 'daily';
         $query = Transaction::with('category')->where('user_id', $user ? $user->id : null);
 
-        // optional filters from querystring (category, type)
+        // optional filters from querystring (category, type, name)
         if (request()->has('category_id') && request('category_id') != '') {
             $query->where('category_id', request('category_id'));
         }
         if (request()->has('type') && in_array(request('type'), ['pemasukan','pengeluaran'])) {
             $query->where('type', request('type'));
+        }
+        if (request()->has('name') && request('name') != '') {
+            $query->where('name', request('name'));
         }
 
         if ($filterType === 'daily') {
@@ -88,50 +91,60 @@ class HomeController extends Controller
             }
         }
         if ($filterType == 'daily') {
+            $date = request('date', now()->toDateString());
             $expenseByCategory = Transaction::with('category')
                 ->where('user_id', $user?->id)
                 ->where('type', 'pengeluaran')
-                ->whereDate('date', now()->toDateString())
+                ->whereDate('date', $date)
                 ->selectRaw('category_id, SUM(amount) as total')
                 ->groupBy('category_id')
                 ->get();
             $expenseByName = Transaction::where('user_id', $user?->id)
                 ->where('type', 'pengeluaran')
-                ->whereDate('date', now()->toDateString())
+                ->whereDate('date', $date)
                 ->selectRaw('name, SUM(amount) as total')
                 ->groupBy('name')
                 ->get();
         } elseif ($filterType == 'monthly') {
+            $month = request('month', now()->format('Y-m'));
             $expenseByCategory = Transaction::with('category')
                 ->where('user_id', $user?->id)
                 ->where('type', 'pengeluaran')
-                ->whereMonth('date', now()->month)
-                ->whereYear('date', now()->year)
+                ->whereYear('date', substr($month, 0, 4))
+                ->whereMonth('date', substr($month, 5, 2))
                 ->selectRaw('category_id, SUM(amount) as total')
                 ->groupBy('category_id')
                 ->get();
             $expenseByName = Transaction::where('user_id', $user?->id)
                 ->where('type', 'pengeluaran')
-                ->whereMonth('date', [request('start_date'), request('end_date')])
+                ->whereYear('date', substr($month, 0, 4))
+                ->whereMonth('date', substr($month, 5, 2))
                 ->selectRaw('name, SUM(amount) as total')
                 ->groupBy('name')
                 ->get();
         } elseif ($filterType == 'range') {
-            $expenseByCategory = Transaction::with('category')
-                ->where('user_id', $user?->id)
-                ->where('type', 'pengeluaran')
-                ->whereMonth('date', now()->month)
-                ->whereYear('date', now()->year)
-                ->selectRaw('category_id, SUM(amount) as total')
-                ->groupBy('category_id')
-                ->get();
+            $start = request('start_date');
+            $end = request('end_date') ?: $start;
+            
+            if ($start && $end) {
+                $expenseByCategory = Transaction::with('category')
+                    ->where('user_id', $user?->id)
+                    ->where('type', 'pengeluaran')
+                    ->whereBetween('date', [$start, $end])
+                    ->selectRaw('category_id, SUM(amount) as total')
+                    ->groupBy('category_id')
+                    ->get();
 
-            $expenseByName = Transaction::where('user_id', $user?->id)
-                ->where('type', 'pengeluaran')
-                ->whereBetween('date', [request('start_date'), request('end_date')])
-                ->selectRaw('name, SUM(amount) as total')
-                ->groupBy('name')
-                ->get();
+                $expenseByName = Transaction::where('user_id', $user?->id)
+                    ->where('type', 'pengeluaran')
+                    ->whereBetween('date', [$start, $end])
+                    ->selectRaw('name, SUM(amount) as total')
+                    ->groupBy('name')
+                    ->get();
+            } else {
+                $expenseByCategory = collect();
+                $expenseByName = collect();
+            }
         }
         // Analisis pengeluaran group by kategori
         // Compute budget alerts for the selected period (monthly only for now)
